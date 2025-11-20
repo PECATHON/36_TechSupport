@@ -2,22 +2,41 @@ import logging
 import time
 from pathlib import Path
 
-from docling_core.types.doc import ImageRefMode, PictureItem, TableItem
-
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling_core.types.doc import \
+    ImageRefMode  # pyright: ignore[reportPrivateImportUsage]
+from docling_core.types.doc import \
+    PictureItem  # pyright: ignore[reportPrivateImportUsage]
+from docling_core.types.doc import \
+    TableItem  # pyright: ignore[reportPrivateImportUsage]
+from rich import print
 
 _log = logging.getLogger(__name__)
 
 IMAGE_RESOLUTION_SCALE = 2.0
+
+redundent_types = [
+    "remote_sensing",
+    "logo",
+    "other",
+    "screenshot",
+    "signature",
+    "chemistry_molecular_structure",
+    "icon",
+    "stamp",
+    "chemistry_markush_structure",
+    "bar_code",
+    "qr_code",
+]
 
 
 def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "data/PDFS"
-    input_doc_path = data_folder / "DOC-1_images.pdf"
+    input_doc_path = data_folder / "DOC-1.pdf"
     output_dir = Path("output")
 
     # Keep page/element images so they can be exported. The `images_scale` controls
@@ -27,6 +46,7 @@ def main():
     pipeline_options.images_scale = IMAGE_RESOLUTION_SCALE
     pipeline_options.generate_page_images = True
     pipeline_options.generate_picture_images = True
+    pipeline_options.do_picture_classification = True
 
     doc_converter = DocumentConverter(
         format_options={
@@ -46,7 +66,7 @@ def main():
         page_no = page.page_no
         page_image_filename = output_dir / f"{doc_filename}-{page_no}.png"
         with page_image_filename.open("wb") as fp:
-            page.image.pil_image.save(fp, format="PNG")
+            page.image.pil_image.save(fp, format="PNG")  # pyright: ignore[reportOptionalMemberAccess]
 
     # Save images of figures and tables
     table_counter = 0
@@ -61,17 +81,26 @@ def main():
             element_image_filename = (
                 table_path / f"{doc_filename}-table-{table_counter}.png"
             )
-            with element_image_filename.open("wb") as fp:
-                element.get_image(conv_res.document).save(fp, "PNG")
-                # print(element.export_to_dataframe())
-
-        if isinstance(element, PictureItem):
-            picture_counter += 1
-            element_image_filename = (
-                images_path / f"{doc_filename}-picture-{picture_counter}.png"
+            element_pandas_filename = (
+                table_path / f"{doc_filename}-table-{table_counter}.csv"
             )
             with element_image_filename.open("wb") as fp:
-                element.get_image(conv_res.document).save(fp, "PNG")
+                element.get_image(conv_res.document).save(fp, "PNG")  # pyright: ignore[reportOptionalMemberAccess]
+            df = element.export_to_dataframe(conv_res.document)
+            df.to_csv(element_pandas_filename, index=False)
+
+        if isinstance(element, PictureItem):
+            # print(element.caption_text(conv_res.document))
+            major_type = element.annotations[0].predicted_classes[0].class_name  # pyright: ignore[reportAttributeAccessIssue]
+            if major_type in redundent_types:
+                continue
+            picture_counter += 1
+            element_image_filename = (
+                images_path
+                / f"{doc_filename}-picture-{picture_counter}-{major_type}.png"
+            )
+            with element_image_filename.open("wb") as fp:
+                element.get_image(conv_res.document).save(fp, "PNG")  # pyright: ignore[reportOptionalMemberAccess]
 
     # Save markdown with embedded pictures
     md_filename = output_dir / f"{doc_filename}-with-images.md"
