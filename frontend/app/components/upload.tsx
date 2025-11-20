@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Chat from "./chat";
+import * as ALL from "C:/Users/SWARNIM ARYA/36_TechSupport/backend/output/images";
 export default function Upload() {
   const [files, setFiles] = useState<File[]>([]);
   const [pdfUrls, setPdfUrls] = useState<string[]>([]);
@@ -29,6 +29,7 @@ export default function Upload() {
     // });
     // const data = await res.json();
     // console.log("Upload response:", data);
+
   };
 
   return (
@@ -56,13 +57,14 @@ export default function Upload() {
       ) : (
         <div className="overflow-y-scroll flex flex-col md:flex-row mt-20 mr-10 ml-10 gap-4">
           <div className="w-auto h-[80vh] flex-1">
-            {pdfUrls.length > 0 ? (
+            {/* {pdfUrls.length > 0 ? (
               <iframe
                 src={pdfUrls[0] || undefined}
                 className="w-[85vh] h-full border rounded-lg"
                 title={`PDF Preview 0`}
               />
-            ) : null}
+            ) : null} */}
+
           </div>
           <div className="w-64 flex flex-col gap-4 overflow-y-auto">
             {pdfUrls.map((url, idx) => (
