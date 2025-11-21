@@ -1,4 +1,5 @@
 import cv2
+from rich import print
 import numpy as np
 
 def detect_line_segments(image_path):
@@ -156,7 +157,8 @@ def extract_line_chart(image_path):
 
     return data_points
 
-points = extract_line_chart("output/images/DOC-1-picture-12-line_chart.png")
-print(points)
-num=get_ocr_blocks("output/images/DOC-1-picture-12-line_chart.png")
-print(num)
+if __name__ == "__main__":
+    points = extract_line_chart("output/DOC-1/images/DOC-1-picture-1-line_chart.png")
+    print(points)
+    num=get_ocr_blocks("output/DOC-1/images/DOC-1-picture-1-line_chart.png")
+    print(num)

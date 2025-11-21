@@ -6,6 +6,7 @@ from PIL import Image
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.staticfiles import StaticFiles
+
 from .app.images import main as get_files
 
 app = FastAPI()
@@ -59,27 +60,30 @@ async def parse_files(file: UploadFile = File(...)):
     csvs, images = get_files(out_path)
 
     for p in csvs:
-        path = p[0]
+        csv_path = p[0]
+        png_path = p[1]
 
-        if not path.exists():
-            csvs_results.append(("", f"Missing file: {p}"))
+        if not csv_path.exists():
+            csvs_results.append(("", "", f"Missing file: {p}"))
             continue
 
         # You generate or retrieve the description however you want
-        description = p[1]
+        description = p[2]
 
         csvs_results.append(
             (
-                f"http://localhost:8000/output/{out_path.name.split('.')[0]}/tables/{str(path.name)}",
+                f"http://localhost:8000/output/{out_path.name.split('.')[0]}/tables/{str(csv_path.name)}",
+                f"http://localhost:8000/output/{out_path.name.split('.')[0]}/tables/{str(png_path.name)}",
                 description,
             )
         )
 
     for p in images:
-        path = p[0]
+        csv_path = p[0]
+        png_path = p[1]
 
-        if not path.exists():
-            images_results.append(("", f"Missing file: {p}"))
+        if not csv_path.exists():
+            images_results.append(("", "", f"Missing file: {p}"))
             continue
 
         # You generate or retrieve the description however you want
@@ -87,10 +91,10 @@ async def parse_files(file: UploadFile = File(...)):
 
         images_results.append(
             (
-                f"http://localhost:8000/output/{out_path.name.split('.')[0]}/images/{str(path.name)}",
+                f"http://localhost:8000/output/{out_path.name.split('.')[0]}/tables/{str(csv_path.name)}",
+                f"http://localhost:8000/output/{out_path.name.split('.')[0]}/tables/{str(png_path.name)}",
                 description,
             )
         )
 
     return {"csvs": csvs_results, "images": images_results}
-

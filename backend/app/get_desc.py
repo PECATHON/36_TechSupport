@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -30,7 +31,8 @@ def get_responses(path: Path):
                 ],
             )
 
-            images.append((file, response.text))
+            images.append((file.name.replace(file.suffix, ".csv"), file, response.text))
+        time.sleep(5)
 
     csvs = []
     for file in (path / "tables").glob("*.csv"):
@@ -47,9 +49,11 @@ def get_responses(path: Path):
                 ],
             )
 
-            csvs.append((file, response.text))
+            csvs.append((file, file.name.replace(file.suffix, ".png"), response.text))
+        time.sleep(5)
 
     return csvs, images
+
 
 if __name__ == "__main__":
     get_responses(Path("./output/DOC-5"))

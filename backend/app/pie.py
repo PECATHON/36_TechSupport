@@ -1,39 +1,7 @@
 import cv2
+from rich import print
 import numpy as np
-path ="output/images/DOC-1-picture-16-pie_chart.png"
-img = cv2.imread(path)
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-blur = cv2.GaussianBlur(gray, (5,5), 0)
-
-circles = cv2.HoughCircles(
-    gray, cv2.HOUGH_GRADIENT, dp=1.2, minDist=200,
-    param1=50, param2=30,
-    minRadius=50, maxRadius=0
-)
-
-if circles is not None:
-    x, y, r = circles[0][0]
-
-mask = np.zeros_like(gray)
-cv2.circle(mask, (int(x), int(y)), int(r), 255, -1)
-pie = cv2.bitwise_and(img, img, mask=mask)
-
-edges = cv2.Canny(gray, 80, 150)
-lines = cv2.HoughLines(edges, 1, np.pi/180, threshold=120)
-
 import easyocr
-reader = easyocr.Reader(['en'])
-result = reader.readtext(img)
-
-percentages = []
-for bbox, text, conf in result:
-    if "%" in text:
-        percentages.append((bbox, text))
-
-labels = []
-for bbox, text, conf in result:
-    if not any(c.isdigit() for c in text):
-        labels.append((bbox, text))
 
 def angle_from_center(cx, cy, lx, ly):
     return np.degrees(np.arctan2(ly - cy, lx - cx)) % 360
@@ -84,5 +52,7 @@ def extract_pie_chart(pie_path):
         })
 
     return mapping
-num=extract_pie_chart("output/images/DOC-1-picture-16-pie_chart.png")
-print(num)
+
+if __name__ == "__main__":
+    num=extract_pie_chart("output/DOC-1/images/DOC-1-picture-10-pie_chart.png")
+    print(num)
