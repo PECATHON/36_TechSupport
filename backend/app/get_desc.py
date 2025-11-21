@@ -20,37 +20,49 @@ def get_responses(path: Path):
     for file in (path / "images").glob("*.png"):
         with open(file, "rb") as f:
             csv_bytes = f.read()
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[
-                    types.Part.from_bytes(
-                        data=csv_bytes,
-                        mime_type="image/png",
-                    ),
-                    "Give me a short description for the file",
-                ],
-            )
+            # response = client.models.generate_content(
+            #     model="gemini-2.5-flash",
+            #     contents=[
+            #         types.Part.from_bytes(
+            #             data=csv_bytes,
+            #             mime_type="image/png",
+            #         ),
+            #         "Give me a short description for the file",
+            #     ],
+            # )
 
-            images.append((file.name.replace(file.suffix, ".csv"), file, response.text))
-        time.sleep(5)
+            images.append(
+                (
+                    file.parent / file.name.replace(file.suffix, ".csv"),
+                    file,
+                    "",
+                )
+            )
+        # time.sleep(5)
 
     csvs = []
     for file in (path / "tables").glob("*.csv"):
         with open(file, "rb") as f:
             csv_bytes = f.read()
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[
-                    types.Part.from_bytes(
-                        data=csv_bytes,
-                        mime_type="text/csv",
-                    ),
-                    "Give me a short description for the file. These are tables extracted from pdfs",
-                ],
+            # response = client.models.generate_content(
+            #     model="gemini-2.5-flash",
+            #     contents=[
+            #         types.Part.from_bytes(
+            #             data=csv_bytes,
+            #             mime_type="text/csv",
+            #         ),
+            #         "Give me a short description for the file. These are tables extracted from pdfs",
+            #     ],
+            # )
+            #
+            csvs.append(
+                (
+                    file,
+                    file.parent / file.name.replace(file.suffix, ".png"),
+                    "",
+                )
             )
-
-            csvs.append((file, file.name.replace(file.suffix, ".png"), response.text))
-        time.sleep(5)
+        # time.sleep(5)
 
     return csvs, images
 
