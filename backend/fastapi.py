@@ -6,12 +6,19 @@ from PIL import Image
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.staticfiles import StaticFiles
-
+from fastapi.middleware.cors import CORSMiddleware
 from .app.images import main as get_files
 
 app = FastAPI()
 
-
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 PDF_MEDIA_TYPES = {
     "application/pdf",
     "application/x-pdf",
@@ -87,7 +94,7 @@ async def parse_files(file: UploadFile = File(...)):
             continue
 
         # You generate or retrieve the description however you want
-        description = p[1]
+        description = p[2]
 
         images_results.append(
             (
