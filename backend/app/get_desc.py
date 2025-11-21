@@ -49,9 +49,6 @@ def get_responses(path: Path):
 
             csvs.append((file, response.text))
 
-    print(images)
-    print(csvs)
-
     return csvs, images
 
 if __name__ == "__main__":

@@ -3,11 +3,10 @@ import time
 from pathlib import Path
 
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import (PdfPipelineOptions,
-                                                PictureDescriptionVlmOptions)
+from docling.datamodel.pipeline_options import (PdfPipelineOptions)
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling_core.types.doc import ImageRefMode, PictureItem, TableItem
-from rich import print
+from docling_core.types.doc import PictureItem, TableItem  # pyright: ignore[reportPrivateImportUsage]
+from .get_desc import get_responses
 
 _log = logging.getLogger(__name__)
 
@@ -28,13 +27,13 @@ redundent_types = [
 ]
 
 
-def main():
+def main(input_doc_path:Path):
     logging.basicConfig(level=logging.INFO)
 
-    data_folder = Path(__file__).parent / "data/PDFS"
-    pdf_file = "DOC-6.pdf"
-    input_doc_path = data_folder / pdf_file
-    output_dir = Path("output") / pdf_file.split(".")[0]
+    if not input_doc_path.is_file():
+        return []
+
+    output_dir = Path("output") / input_doc_path.name.split(".")[0]
 
     pipeline_options = PdfPipelineOptions()
     pipeline_options.images_scale = IMAGE_RESOLUTION_SCALE
@@ -54,12 +53,6 @@ def main():
 
     output_dir.mkdir(parents=True, exist_ok=True)
     doc_filename = conv_res.input.file.stem
-
-    # Save page images
-    # for page_no, page in conv_res.document.pages.items():
-    #     page_image_filename = output_dir / f"{doc_filename}-{page_no}.png"
-    #     with page_image_filename.open("wb") as fp:
-    #         page.image.pil_image.save(fp, "PNG")  # pyright: ignore[reportOptionalMemberAccess]
 
     images_path = output_dir / "images"
     images_path.mkdir(exist_ok=True)
@@ -98,19 +91,9 @@ def main():
 
             element.get_image(conv_res.document).save(img_file, "PNG")  # pyright: ignore[reportOptionalMemberAccess]
 
-    # Save markdown
-    # md_file = output_dir / f"{doc_filename}-with-images.md"
-    # conv_res.document.save_as_markdown(md_file, image_mode=ImageRefMode.EMBEDDED)
-    #
-    # md_file = output_dir / f"{doc_filename}-with-image-refs.md"
-    # conv_res.document.save_as_markdown(md_file, image_mode=ImageRefMode.REFERENCED)
-    #
-    # html_file = output_dir / f"{doc_filename}-with-image-refs.html"
-    # conv_res.document.save_as_html(html_file, image_mode=ImageRefMode.REFERENCED)
 
+    csvs, images = get_responses(output_dir)
+    
     elapsed = time.time() - start_time
     _log.info(f"Document converted and figures exported in {elapsed:.2f} seconds.")
-
-
-if __name__ == "__main__":
-    main()
+    return csvs, images

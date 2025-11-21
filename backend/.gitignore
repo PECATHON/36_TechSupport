@@ -218,3 +218,4 @@ output/
 data/
 **/.DS_Store
 .env
+uploads/
