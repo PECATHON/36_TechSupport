@@ -5,8 +5,9 @@ from pathlib import Path
 from PIL import Image
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
 from .app.images import main as get_files
 
 app = FastAPI()
@@ -14,7 +15,7 @@ app = FastAPI()
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -90,7 +91,7 @@ async def parse_files(file: UploadFile = File(...)):
         png_path = p[1]
 
         if not csv_path.exists():
-            images_results.append(("", "", f"Missing file: {p}"))
+            csvs_results.append(("", "", f"Missing file: {p}"))
             continue
 
         # You generate or retrieve the description however you want
@@ -98,8 +99,8 @@ async def parse_files(file: UploadFile = File(...)):
 
         images_results.append(
             (
-                f"http://localhost:8000/output/{out_path.name.split('.')[0]}/tables/{str(csv_path.name)}",
-                f"http://localhost:8000/output/{out_path.name.split('.')[0]}/tables/{str(png_path.name)}",
+                f"http://localhost:8000/output/{out_path.name.split('.')[0]}/images/{str(csv_path.name)}",
+                f"http://localhost:8000/output/{out_path.name.split('.')[0]}/images/{str(png_path.name)}",
                 description,
             )
         )
