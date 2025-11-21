@@ -1,35 +1,67 @@
 import { useState } from "react";
-import * as ALL from "C:/Users/SWARNIM ARYA/36_TechSupport/backend/output/images";
+
+type ImageData = {
+  csvUrl: string;
+  imageUrl: string;
+  description: string;
+};
+
+type UploadResponse = {
+  csvs: [string, string, string][];
+  images: [string, string, string][];
+};
+
 export default function Upload() {
-  const [files, setFiles] = useState<File[]>([]);
-  const [pdfUrls, setPdfUrls] = useState<string[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string>("");
   const [isUploaded, setIsUploaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [csvData, setCsvData] = useState<ImageData[]>([]);
+  const [imageData, setImageData] = useState<ImageData[]>([]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files ?? []).filter(
-      (f) => f.type === "application/pdf"
-    );
-    if (selectedFiles.length > 0) {
-      setFiles(selectedFiles);
-      const urls = selectedFiles.map((f) => URL.createObjectURL(f));
-      setPdfUrls(urls);
-      uploadPdfs(selectedFiles);
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      const url = URL.createObjectURL(selectedFile);
+      setPdfUrl(url);
+      uploadPdf(selectedFile);
       setIsUploaded(true);
     }
   };
 
-  const uploadPdfs = async (pdfs: File[]) => {
+  const uploadPdf = async (pdf: File) => {
+    setIsLoading(true);
     const formData = new FormData();
-    pdfs.forEach((p) => formData.append("files", p));
+    formData.append("file", pdf);
 
-    // Example: send to backend that accepts multiple files under the `files` key
-    // const res = await fetch("http://127.0.0.1:8000/ingest_pdfs", {
-    //   method: "POST",
-    //   body: formData,
-    // });
-    // const data = await res.json();
-    // console.log("Upload response:", data);
-
+    try {
+      const res = await fetch("http://127.0.0.1:8000/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data: UploadResponse = await res.json();
+      
+      // Transform the data
+      const csvs = data.csvs.map(([csvUrl, imageUrl, description]) => ({
+        csvUrl,
+        imageUrl,
+        description,
+      }));
+      
+      const images = data.images.map(([csvUrl, imageUrl, description]) => ({
+        csvUrl,
+        imageUrl,
+        description,
+      }));
+      
+      setCsvData(csvs);
+      setImageData(images);
+    } catch (error) {
+      console.error("Upload error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -46,38 +78,115 @@ export default function Upload() {
               </h1>
               <input
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,image/*"
                 onChange={handleFileChange}
                 hidden
-                multiple
               />
             </label>
           </div>
         </div>
       ) : (
-        <div className="overflow-y-scroll flex flex-col md:flex-row mt-20 mr-10 ml-10 gap-4">
-          <div className="w-auto h-[80vh] flex-1">
-            {/* {pdfUrls.length > 0 ? (
-              <iframe
-                src={pdfUrls[0] || undefined}
-                className="w-[85vh] h-full border rounded-lg"
-                title={`PDF Preview 0`}
-              />
-            ) : null} */}
-
-          </div>
-          <div className="w-64 flex flex-col gap-4 overflow-y-auto">
-            {pdfUrls.map((url, idx) => (
-              <div key={idx} className="border rounded p-2 bg-white">
-                <a href={url} target="_blank" rel="noreferrer" className="text-sm text-blue-600">
-                  Document {idx + 1}
-                </a>
-                <div className="mt-2">
-                  <iframe src={url} title={`pdf-thumb-${idx}`} className="w-full h-40 border rounded" />
+        <div className="overflow-y-scroll flex flex-row mt-10 mr-10 ml-10 gap-6">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="text-xl text-blue-600">Processing document...</div>
+            </div>
+          ) : (
+            <>
+              {/* PDF Preview Section */}
+              {pdfUrl && (
+                <div className="w-full h-[60vh] border rounded-lg overflow-hidden">
+                  <iframe
+                    src={pdfUrl}
+                    className="w-full h-full"
+                    title="PDF Preview"
+                  />
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+
+              {/* CSV Tables Section */}
+              {csvData.length > 0 && (
+                <div className="mt-6">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                    Tables from Document
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {csvData.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="border rounded-lg p-4 bg-white shadow-md"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                          Table {idx + 1}
+                        </h3>
+                        {item.imageUrl && (
+                          <img
+                            src={item.imageUrl}
+                            alt={`Table ${idx + 1}`}
+                            className="w-full h-auto mb-3 border rounded"
+                          />
+                        )}
+                        <p className="text-sm text-gray-600 mb-2">
+                          {item.description}
+                        </p>
+                        {item.csvUrl && (
+                          <a
+                            href={item.csvUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-600 hover:underline text-sm"
+                          >
+                            Download CSV
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Charts Section */}
+              {imageData.length > 0 && (
+                <div className="mt-6">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                    Charts from Document
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {imageData.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="border rounded-lg p-4 bg-white shadow-md"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                          Chart {idx + 1}
+                        </h3>
+                        {item.imageUrl && (
+                          <img
+                            src={item.imageUrl}
+                            alt={`Chart ${idx + 1}`}
+                            className="w-full h-auto mb-3 border rounded"
+                          />
+                        )}
+                        <p className="text-sm text-gray-600 mb-2">
+                          {item.description}
+                        </p>
+                        {item.csvUrl && (
+                          <a
+                            href={item.csvUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-600 hover:underline text-sm"
+                          >
+                            Download CSV Data
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </>
